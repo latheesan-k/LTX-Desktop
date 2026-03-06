@@ -88,3 +88,35 @@ Key patterns:
 - Electron builder config: `electron-builder.yml`
 - Video editor (largest frontend file): `frontend/views/VideoEditor.tsx`
 - Project types: `frontend/types/project.ts`
+
+## Cursor Cloud specific instructions
+
+### Services overview
+
+LTX Desktop is a self-contained Electron desktop app with no external databases or Docker services. Three internal components run together via `pnpm dev`:
+
+| Component | How it starts | Port |
+|---|---|---|
+| Vite dev server (frontend) | Started by `pnpm dev` | 5173 |
+| Electron main process | Started by `pnpm dev` (via `vite-plugin-electron`) | — |
+| Python FastAPI backend | Auto-spawned by Electron as a child process | 8000 |
+
+### Running in the cloud VM
+
+- **No GPU available**: the VM has no CUDA GPU, so the backend starts in API-only mode (`force_api_generations=True`). Local model inference is unavailable, but the app launches and the backend serves all non-generation endpoints correctly.
+- **Electron + display**: `DISPLAY=:1` is pre-configured via Xvfb. D-Bus errors in Electron logs (`Failed to connect to the bus`) are harmless and expected in headless environments.
+- **Backend health check**: `curl http://localhost:8000/health` confirms the FastAPI backend is running.
+- **First launch**: the Electron app shows a license agreement dialog on first run, then prompts for API keys (LTX API is required in API-only mode).
+
+### Lint, test, and build
+
+All commands are in `package.json`; see the Common Commands table above. Key CI checks:
+
+- `pnpm typecheck` — runs both TypeScript (`tsc --noEmit`) and Python (`pyright`) type checks
+- `pnpm backend:test` — runs pytest (221 integration tests)
+- `pnpm build:frontend` — Vite production build of the frontend
+
+### Dependency managers
+
+- **Node.js**: pnpm 10.30.3 (lockfile: `pnpm-lock.yaml`)
+- **Python**: uv (lockfile: `backend/uv.lock`), Python 3.13.12 (per `backend/.python-version`)

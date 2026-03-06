@@ -57,6 +57,7 @@ export function LaunchGate({
   const [licenseError, setLicenseError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isActionPending, setIsActionPending] = useState(false)
+  const [modelQuality, setModelQuality] = useState<'full' | 'quantized'>('full')
 
   // Format bytes to human readable
   const formatBytes = (bytes: number): string => {
@@ -182,17 +183,19 @@ export function LaunchGate({
     if (!backendUrl) return
     setCurrentStep('installing')
     try {
-      // If API key is provided, save it to settings first and skip text encoder download
+      // Save model quality and optional API key to settings before downloading
+      const settingsPayload: Record<string, string> = { modelQuality: modelQuality }
       if (ltxApiKey.trim()) {
-        try {
-          await fetch(`${backendUrl}/api/settings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ltxApiKey: ltxApiKey.trim() }),
-          })
-        } catch (e) {
-          logger.error(`Failed to save API key: ${e}`)
-        }
+        settingsPayload.ltxApiKey = ltxApiKey.trim()
+      }
+      try {
+        await fetch(`${backendUrl}/api/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settingsPayload),
+        })
+      } catch (e) {
+        logger.error(`Failed to save settings: ${e}`)
       }
 
       // Start download - skip text encoder if API key is provided
@@ -510,6 +513,64 @@ export function LaunchGate({
                   marginTop: 10
                 }}>
                   <span>Available: <strong style={{ color: '#fff' }}>{availableSpace}</strong></span>
+                </div>
+              </div>
+
+              {/* Model Quality Selection */}
+              <div style={{
+                marginTop: 24,
+                background: '#2e3445',
+                borderRadius: 12,
+                padding: '14px 18px'
+              }}>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                    Model Quality
+                  </label>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={() => setModelQuality('full')}
+                    style={{
+                      flex: 1,
+                      padding: '12px 14px',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: modelQuality === 'full' ? 'linear-gradient(125deg, #A98BD9, #6D28D9)' : '#1a1a1a',
+                      border: modelQuality === 'full' ? '1px solid #6D28D9' : '1px solid #333',
+                      color: '#ffffff',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div>Full Quality</div>
+                    <div style={{ fontSize: 11, fontWeight: 400, color: modelQuality === 'full' ? '#e0d0f0' : '#888', marginTop: 4 }}>
+                      BFloat16 · ~43 GB checkpoint · Best quality
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setModelQuality('quantized')}
+                    style={{
+                      flex: 1,
+                      padding: '12px 14px',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: modelQuality === 'quantized' ? 'linear-gradient(125deg, #A98BD9, #6D28D9)' : '#1a1a1a',
+                      border: modelQuality === 'quantized' ? '1px solid #6D28D9' : '1px solid #333',
+                      color: '#ffffff',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div>Quantized (FP8)</div>
+                    <div style={{ fontSize: 11, fontWeight: 400, color: modelQuality === 'quantized' ? '#e0d0f0' : '#888', marginTop: 4 }}>
+                      FP8 · ~22 GB checkpoint · Faster, lower VRAM
+                    </div>
+                  </button>
                 </div>
               </div>
 

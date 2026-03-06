@@ -114,6 +114,11 @@ if [ "$UNPACK" = true ]; then
       echo "Unpacked app ready!"
       echo "Run: $RELEASE_DIR/win-unpacked/LTX Desktop.exe"
       ;;
+    linux)
+      echo ""
+      echo "Unpacked app ready!"
+      echo "Run: $RELEASE_DIR/linux-unpacked/ltx-desktop"
+      ;;
   esac
 else
   echo ""
