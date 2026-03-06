@@ -34,28 +34,26 @@ cd "$PROJECT_DIR/backend"
 uv sync --extra dev
 ok "uv sync complete"
 
-# Verify torch backend
+# Verify torch + MPS
 echo ""
-case "$(uname -s)" in
-  Darwin)
-    echo "Verifying PyTorch MPS support..."
-    .venv/bin/python -c "import torch; mps=hasattr(torch.backends,'mps') and torch.backends.mps.is_available(); print(f'MPS available: {mps}')" || true
-    ;;
-  Linux)
-    echo "Verifying PyTorch CUDA support..."
-    .venv/bin/python -c "import torch; cuda=torch.cuda.is_available(); print(f'CUDA available: {cuda}')" || true
-    ;;
-esac
+if [ "$(uname -s)" = "Linux" ]; then
+  echo "Verifying PyTorch CUDA support..."
+  .venv/bin/python -c "import torch; cuda=torch.cuda.is_available(); print(f'CUDA available: {cuda}')" || true
+else
+  echo "Verifying PyTorch MPS support..."
+  .venv/bin/python -c "import torch; mps=hasattr(torch.backends,'mps') and torch.backends.mps.is_available(); print(f'MPS available: {mps}')" || true
+fi
 
 # ── ffmpeg check ────────────────────────────────────────────────────
 echo ""
 if command -v ffmpeg >/dev/null 2>&1; then
   ok "ffmpeg found: $(ffmpeg -version 2>&1 | head -1)"
 else
-  case "$(uname -s)" in
-    Darwin) echo "⚠  ffmpeg not found — install with: brew install ffmpeg" ;;
-    Linux)  echo "⚠  ffmpeg not found — install with: sudo apt install ffmpeg" ;;
-  esac
+  if [ "$(uname -s)" = "Linux" ]; then
+    echo "⚠  ffmpeg not found — install with: sudo apt install ffmpeg"
+  else
+    echo "⚠  ffmpeg not found — install with: brew install ffmpeg"
+  fi
   echo "   (imageio-ffmpeg bundled binary will be used as fallback)"
 fi
 
