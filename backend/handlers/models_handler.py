@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from api_types import ModelFileStatus, ModelInfo, ModelsStatusResponse, TextEncoderStatus
 from handlers.base import StateHandlerBase, with_state_lock
-from runtime_config.model_download_specs import MODEL_FILE_ORDER, resolve_required_model_types
+from runtime_config.model_download_specs import MODEL_FILE_ORDER, get_model_download_specs, resolve_required_model_types
 from state.app_state_types import AppState, AvailableFiles
 
 if TYPE_CHECKING:
@@ -32,10 +32,11 @@ class ModelsHandler(StateHandlerBase):
         return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
     def _scan_available_files(self) -> AvailableFiles:
+        quality = self.state.app_settings.model_quality
         files: AvailableFiles = {}
         for model_type in MODEL_FILE_ORDER:
-            spec = self._config.spec_for(model_type)
-            path = self._config.model_path(model_type)
+            spec = self._config.spec_for_quality(model_type, quality)
+            path = self._config.model_path_for_quality(model_type, quality)
             if spec.is_folder:
                 ready = path.exists() and any(path.iterdir()) if path.exists() else False
                 files[model_type] = path if ready else None
@@ -78,6 +79,8 @@ class ModelsHandler(StateHandlerBase):
     def get_models_status(self, has_api_key: bool | None = None) -> ModelsStatusResponse:
         files = self.refresh_available_files()
         settings = self.state.app_settings.model_copy(deep=True)
+        quality = settings.model_quality
+        specs = get_model_download_specs(quality)
 
         if has_api_key is None:
             has_api_key = bool(settings.ltx_api_key)
@@ -92,7 +95,7 @@ class ModelsHandler(StateHandlerBase):
         )
 
         for model_type in MODEL_FILE_ORDER:
-            spec = self._config.spec_for(model_type)
+            spec = specs[model_type]
             path = files[model_type]
             exists = path is not None
             actual_size = self._path_size(path, is_folder=spec.is_folder) if exists else 0
@@ -134,4 +137,5 @@ class ModelsHandler(StateHandlerBase):
             has_api_key=has_api_key,
             text_encoder_status=self.get_text_encoder_status(),
             use_local_text_encoder=settings.use_local_text_encoder,
+            model_quality=quality,
         )

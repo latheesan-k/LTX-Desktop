@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeGuard, TypeVar, cast, get_args
+from typing import Any, Literal, TypeGuard, TypeVar, cast, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator
 
@@ -59,6 +59,9 @@ class ProModelSettings(SettingsBaseModel):
         return _clamp_int(value, minimum=1, maximum=100, default=20)
 
 
+ModelQuality = Literal["full", "quantized"]
+
+
 class AppSettings(SettingsBaseModel):
     use_torch_compile: bool = False
     load_on_startup: bool = False
@@ -72,6 +75,7 @@ class AppSettings(SettingsBaseModel):
     prompt_enhancer_enabled_t2v: bool = True
     prompt_enhancer_enabled_i2v: bool = False
     gemini_api_key: str = ""
+    model_quality: ModelQuality = "full"
     seed_locked: bool = False
     locked_seed: int = 42
 
@@ -143,6 +147,7 @@ class SettingsResponse(SettingsBaseModel):
     prompt_enhancer_enabled_t2v: bool = True
     prompt_enhancer_enabled_i2v: bool = False
     has_gemini_api_key: bool = False
+    model_quality: ModelQuality = "full"
     seed_locked: bool = False
     locked_seed: int = 42
 

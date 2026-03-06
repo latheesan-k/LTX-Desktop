@@ -120,7 +120,8 @@ class PipelinesHandler(StateHandlerBase):
     def _create_video_pipeline(self, model_type: VideoPipelineModelType) -> VideoPipelineState:
         gemma_root = self._text_handler.resolve_gemma_root()
 
-        checkpoint_path = str(self._config.model_path("checkpoint"))
+        quality = self.state.app_settings.model_quality
+        checkpoint_path = str(self._config.model_path_for_quality("checkpoint", quality))
         upsampler_path = str(self._config.model_path("upsampler"))
 
         pipeline = self._fast_video_pipeline_class.create(
@@ -288,8 +289,9 @@ class PipelinesHandler(StateHandlerBase):
 
         self._evict_gpu_pipeline_for_swap()
 
+        quality = self.state.app_settings.model_quality
         pipeline = self._ic_lora_pipeline_class.create(
-            str(self._config.model_path("checkpoint")),
+            str(self._config.model_path_for_quality("checkpoint", quality)),
             self._text_handler.resolve_gemma_root(),
             str(self._config.model_path("upsampler")),
             lora_path,
@@ -314,8 +316,9 @@ class PipelinesHandler(StateHandlerBase):
 
         self._evict_gpu_pipeline_for_swap()
 
+        quality = self.state.app_settings.model_quality
         pipeline = self._a2v_pipeline_class.create(
-            str(self._config.model_path("checkpoint")),
+            str(self._config.model_path_for_quality("checkpoint", quality)),
             self._text_handler.resolve_gemma_root(),
             str(self._config.model_path("upsampler")),
             self._device,
@@ -345,9 +348,10 @@ class PipelinesHandler(StateHandlerBase):
 
         from ltx_core.quantization import QuantizationPolicy
 
+        quality = self.state.app_settings.model_quality
         quantization = QuantizationPolicy.fp8_cast() if quantized else None
         pipeline = self._retake_pipeline_class.create(
-            checkpoint_path=str(self._config.model_path("checkpoint")),
+            checkpoint_path=str(self._config.model_path_for_quality("checkpoint", quality)),
             gemma_root=self._text_handler.resolve_gemma_root(),
             device=self._device,
             loras=[],

@@ -36,11 +36,27 @@ case "$ARCH" in
   *) echo "ERROR: Unsupported architecture: $ARCH"; exit 1 ;;
 esac
 
-PBS_URL="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/cpython-${PYTHON_VERSION}+${PBS_TAG}-${PBS_ARCH}-apple-darwin-install_only_stripped.tar.gz"
+OS_TYPE="$(uname -s)"
+case "$OS_TYPE" in
+  Darwin)
+    PBS_PLATFORM="apple-darwin"
+    PLATFORM_LABEL="macOS"
+    ;;
+  Linux)
+    PBS_PLATFORM="unknown-linux-gnu"
+    PLATFORM_LABEL="Linux"
+    ;;
+  *)
+    echo "ERROR: Unsupported OS: $OS_TYPE"
+    exit 1
+    ;;
+esac
+
+PBS_URL="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/cpython-${PYTHON_VERSION}+${PBS_TAG}-${PBS_ARCH}-${PBS_PLATFORM}-install_only_stripped.tar.gz"
 
 echo "========================================"
 echo "  LTX Video - Python Environment Setup"
-echo "  Platform: macOS ($ARCH)"
+echo "  Platform: $PLATFORM_LABEL ($ARCH)"
 echo "  Python: $PYTHON_VERSION"
 echo "========================================"
 
@@ -150,9 +166,12 @@ echo ""
 echo "Step 6: Installing dependencies from requirements.txt..."
 echo "  (This may take a while — PyTorch + ML libraries are large)"
 
-# No --extra-index-url needed on macOS: standard PyPI torch includes MPS support
+PIP_EXTRA_ARGS=""
+if [ "$OS_TYPE" = "Linux" ]; then
+    PIP_EXTRA_ARGS="--extra-index-url https://download.pytorch.org/whl/cu128"
+fi
 "$PYTHON_EXE" -m pip install -r "$REQUIREMENTS_FILE" \
-    --no-warn-script-location --quiet
+    --no-warn-script-location --quiet $PIP_EXTRA_ARGS
 
 echo "  All dependencies installed"
 
@@ -178,18 +197,20 @@ find "$OUTPUT_PATH/lib" -type d -name "test" -exec rm -rf {} + 2>/dev/null || tr
 
 # Remove files only needed for building native extensions, not at runtime.
 # This cuts ~14k files and speeds up macOS codesigning dramatically.
-# NOTE: Windows needs .h files for sageattention/triton — this script is macOS only.
-rm -rf "$OUTPUT_PATH/include" "$OUTPUT_PATH/share" 2>/dev/null || true
-find "$OUTPUT_PATH/lib" -type d -name "include" -exec rm -rf {} + 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.pyi" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.pxd" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.pyx" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.hpp" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cpp" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.h" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cuh" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cu" -delete 2>/dev/null || true
-find "$OUTPUT_PATH" -name "*.cmake" -delete 2>/dev/null || true
+# NOTE: Linux needs .h files for sageattention/triton — skip header removal on Linux.
+if [ "$OS_TYPE" = "Darwin" ]; then
+    rm -rf "$OUTPUT_PATH/include" "$OUTPUT_PATH/share" 2>/dev/null || true
+    find "$OUTPUT_PATH/lib" -type d -name "include" -exec rm -rf {} + 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.pyi" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.pxd" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.pyx" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.hpp" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.cpp" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.h" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.cuh" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.cu" -delete 2>/dev/null || true
+    find "$OUTPUT_PATH" -name "*.cmake" -delete 2>/dev/null || true
+fi
 
 # Remove temp directory and generated requirements file
 rm -rf "$TEMP_DIR"
@@ -205,12 +226,19 @@ echo "Step 8: Verifying installation..."
 
 "$PYTHON_EXE" -c "
 import sys
+import platform
 print(f'  Python: {sys.version}')
 try:
     import torch
     print(f'  PyTorch: {torch.__version__}')
-    mps = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
-    print(f'  MPS available: {mps}')
+    if platform.system() == 'Darwin':
+        mps = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
+        print(f'  MPS available: {mps}')
+    elif platform.system() == 'Linux':
+        cuda = torch.cuda.is_available()
+        print(f'  CUDA available: {cuda}')
+        if cuda:
+            print(f'  GPU: {torch.cuda.get_device_name(0)}')
 except ImportError as e:
     print(f'  PyTorch import FAILED: {e}')
     sys.exit(1)
