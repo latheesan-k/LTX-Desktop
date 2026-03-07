@@ -187,7 +187,12 @@ LTX_API_BASE_URL = "https://api.ltx.video"
 
 
 def _read_model_quality_from_settings() -> str:
-    """Read model_quality from the persisted settings file (before AppHandler exists)."""
+    """Read model_quality from the persisted settings file (before AppHandler exists).
+
+    Returns ``"auto"`` when no settings file exists yet (first run) so the
+    runtime policy uses the most permissive VRAM threshold and the user can
+    pick their quality during setup.
+    """
     try:
         if SETTINGS_FILE.exists():
             import json as _json
@@ -198,7 +203,9 @@ def _read_model_quality_from_settings() -> str:
                 return quality
     except Exception:
         pass
-    return "full"
+    # No settings file yet — first run.  Use "auto" so the runtime policy
+    # applies the lowest VRAM threshold and lets the user choose quality.
+    return "auto"
 
 
 def _resolve_force_api_generations() -> bool:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 # Full-precision (bfloat16) models need ~31 GB VRAM.
 # FP8 quantized models need roughly half: ~12 GB.
-_VRAM_THRESHOLD_FULL = 31
-_VRAM_THRESHOLD_QUANTIZED = 12
+VRAM_THRESHOLD_FULL = 31
+VRAM_THRESHOLD_QUANTIZED = 12
 
 
 def decide_force_api_generations(
@@ -14,7 +14,11 @@ def decide_force_api_generations(
     vram_gb: int | None,
     model_quality: str = "full",
 ) -> bool:
-    """Return whether API-only generation must be forced for this runtime."""
+    """Return whether API-only generation must be forced for this runtime.
+
+    When *model_quality* is ``"auto"`` the most permissive threshold
+    (quantized) is used so the user can pick quality during first-run setup.
+    """
     if system == "Darwin":
         return True
 
@@ -23,7 +27,12 @@ def decide_force_api_generations(
             return True
         if vram_gb is None:
             return True
-        threshold = _VRAM_THRESHOLD_QUANTIZED if model_quality == "quantized" else _VRAM_THRESHOLD_FULL
+        if model_quality == "auto":
+            threshold = VRAM_THRESHOLD_QUANTIZED
+        elif model_quality == "quantized":
+            threshold = VRAM_THRESHOLD_QUANTIZED
+        else:
+            threshold = VRAM_THRESHOLD_FULL
         return vram_gb < threshold
 
     return True
