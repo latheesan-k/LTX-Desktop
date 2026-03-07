@@ -50,6 +50,15 @@ def test_quantized_lowers_vram_threshold() -> None:
     assert decide_force_api_generations(system="Windows", cuda_available=True, vram_gb=16, model_quality="quantized") is False
 
 
+def test_auto_uses_lowest_threshold() -> None:
+    # "auto" (first run, no settings yet) uses quantized threshold so the
+    # user can reach the setup flow and pick quality.
+    assert decide_force_api_generations(system="Linux", cuda_available=True, vram_gb=16, model_quality="auto") is False
+    assert decide_force_api_generations(system="Windows", cuda_available=True, vram_gb=24, model_quality="auto") is False
+    # Still forces API when below even the quantized threshold
+    assert decide_force_api_generations(system="Linux", cuda_available=True, vram_gb=8, model_quality="auto") is True
+
+
 def test_quantized_still_requires_cuda() -> None:
     assert decide_force_api_generations(system="Linux", cuda_available=False, vram_gb=16, model_quality="quantized") is True
 
