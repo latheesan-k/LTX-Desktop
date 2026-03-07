@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from state.app_state_types import ModelFileType
+
+ModelQualityType = Literal["full", "quantized"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +62,31 @@ DEFAULT_MODEL_DOWNLOAD_SPECS: dict[ModelFileType, ModelFileDownloadSpec] = {
         description="Z-Image-Turbo model for text-to-image generation",
     ),
 }
+
+FP8_MODEL_DOWNLOAD_SPECS: dict[ModelFileType, ModelFileDownloadSpec] = {
+    "checkpoint": ModelFileDownloadSpec(
+        relative_path=Path("ltx-2.3-22b-distilled-fp8.safetensors"),
+        expected_size_bytes=22_000_000_000,
+        is_folder=False,
+        repo_id="Lightricks/LTX-2.3-fp8",
+        description="Main transformer model (FP8 quantized)",
+    ),
+}
+
+
+def get_model_download_specs(
+    quality: ModelQualityType = "full",
+) -> dict[ModelFileType, ModelFileDownloadSpec]:
+    """Return the full spec dict for a given quality level.
+
+    For 'quantized', the checkpoint entry is replaced with the FP8 variant.
+    All other model types (upsampler, text_encoder, zit) remain unchanged.
+    """
+    if quality == "quantized":
+        merged = dict(DEFAULT_MODEL_DOWNLOAD_SPECS)
+        merged.update(FP8_MODEL_DOWNLOAD_SPECS)
+        return merged
+    return dict(DEFAULT_MODEL_DOWNLOAD_SPECS)
 
 
 DEFAULT_REQUIRED_MODEL_TYPES: frozenset[ModelFileType] = frozenset(

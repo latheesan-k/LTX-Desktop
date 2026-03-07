@@ -145,6 +145,7 @@ class ModelsStatusResponse(BaseModel):
     has_api_key: bool
     text_encoder_status: TextEncoderStatus
     use_local_text_encoder: bool
+    model_quality: str = "full"
 
 
 class DownloadProgressResponse(BaseModel):
