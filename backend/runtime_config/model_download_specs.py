@@ -65,8 +65,8 @@ DEFAULT_MODEL_DOWNLOAD_SPECS: dict[ModelFileType, ModelFileDownloadSpec] = {
 
 FP8_MODEL_DOWNLOAD_SPECS: dict[ModelFileType, ModelFileDownloadSpec] = {
     "checkpoint": ModelFileDownloadSpec(
-        relative_path=Path("ltx-2.3-22b-distilled-fp8.safetensors"),
-        expected_size_bytes=22_000_000_000,
+        relative_path=Path("ltx-2.3-22b-dev-fp8.safetensors"),
+        expected_size_bytes=27_100_000_000,
         is_folder=False,
         repo_id="Lightricks/LTX-2.3-fp8",
         description="Main transformer model (FP8 quantized)",
