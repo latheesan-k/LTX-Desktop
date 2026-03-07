@@ -568,7 +568,7 @@ export function LaunchGate({
                   >
                     <div>Quantized (FP8)</div>
                     <div style={{ fontSize: 11, fontWeight: 400, color: modelQuality === 'quantized' ? '#e0d0f0' : '#888', marginTop: 4 }}>
-                      FP8 · ~22 GB checkpoint · Faster, lower VRAM
+                      FP8 · ~27 GB checkpoint · Faster, lower VRAM
                     </div>
                   </button>
                 </div>
