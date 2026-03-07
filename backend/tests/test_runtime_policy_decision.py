@@ -42,5 +42,25 @@ def test_linux_with_required_vram_allows_local_mode() -> None:
     assert decide_force_api_generations(system="Linux", cuda_available=True, vram_gb=31) is False
 
 
+def test_quantized_lowers_vram_threshold() -> None:
+    # 16 GB is below full threshold (31) but above quantized threshold (12)
+    assert decide_force_api_generations(system="Linux", cuda_available=True, vram_gb=16, model_quality="full") is True
+    assert decide_force_api_generations(system="Linux", cuda_available=True, vram_gb=16, model_quality="quantized") is False
+    assert decide_force_api_generations(system="Windows", cuda_available=True, vram_gb=16, model_quality="full") is True
+    assert decide_force_api_generations(system="Windows", cuda_available=True, vram_gb=16, model_quality="quantized") is False
+
+
+def test_quantized_still_requires_cuda() -> None:
+    assert decide_force_api_generations(system="Linux", cuda_available=False, vram_gb=16, model_quality="quantized") is True
+
+
+def test_quantized_with_very_low_vram_forces_api() -> None:
+    assert decide_force_api_generations(system="Linux", cuda_available=True, vram_gb=8, model_quality="quantized") is True
+
+
+def test_quantized_darwin_still_forces_api() -> None:
+    assert decide_force_api_generations(system="Darwin", cuda_available=True, vram_gb=48, model_quality="quantized") is True
+
+
 def test_other_systems_fail_closed() -> None:
     assert decide_force_api_generations(system="FreeBSD", cuda_available=True, vram_gb=48) is True

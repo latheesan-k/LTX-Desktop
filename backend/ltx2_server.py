@@ -186,24 +186,41 @@ IC_LORA_DIR.mkdir(parents=True, exist_ok=True)
 LTX_API_BASE_URL = "https://api.ltx.video"
 
 
+def _read_model_quality_from_settings() -> str:
+    """Read model_quality from the persisted settings file (before AppHandler exists)."""
+    try:
+        if SETTINGS_FILE.exists():
+            import json as _json
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                data = _json.load(f)
+            quality = data.get("model_quality", "full")
+            if quality in ("full", "quantized"):
+                return quality
+    except Exception:
+        pass
+    return "full"
+
+
 def _resolve_force_api_generations() -> bool:
     gpu_info = GpuInfoImpl()
     system = platform.system()
     cuda_available = gpu_info.get_cuda_available()
     vram_gb = gpu_info.get_vram_total_gb()
+    model_quality = _read_model_quality_from_settings()
 
-    # Server-owned source of truth for mode selection.
     force_api_generations = decide_force_api_generations(
         system=system,
         cuda_available=cuda_available,
         vram_gb=vram_gb,
+        model_quality=model_quality,
     )
     logger.info(
-        "Runtime policy force_api_generations=%s (system=%s cuda_available=%s vram_gb=%s)",
+        "Runtime policy force_api_generations=%s (system=%s cuda_available=%s vram_gb=%s model_quality=%s)",
         force_api_generations,
         system,
         cuda_available,
         vram_gb,
+        model_quality,
     )
     return force_api_generations
 
