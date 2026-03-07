@@ -127,9 +127,10 @@ class DownloadHandler(StateHandlerBase):
                             files_completed += 1
                             downloaded_bytes += size
                         case FileDownloadRunning() as running:
-                            current_file = file_type
-                            current_file_progress = int(running.progress * 100)
-                            speed_mbps = int(running.speed_mbps)
+                            if not current_file:
+                                current_file = specs[file_type].description
+                                current_file_progress = int(running.progress * 100)
+                                speed_mbps = int(running.speed_mbps)
                             downloaded_bytes += running.downloaded_bytes
             case _:
                 status = "idle"
