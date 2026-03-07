@@ -97,9 +97,6 @@ linux:
     - target: AppImage
       arch:
         - x64
-    - target: deb
-      arch:
-        - x64
   icon: resources/icon.png
   category: Video
   extraResources:

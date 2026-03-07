@@ -153,7 +153,9 @@ MODELS_DIR = APP_DATA_DIR / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 PROJECT_ROOT = Path(__file__).parent.parent
-OUTPUTS_DIR = Path(__file__).parent / "outputs"
+# Use APP_DATA_DIR for outputs on Linux AppImage (resources are read-only squashfs).
+# On macOS the .app bundle is writable, but APP_DATA_DIR is safer for all platforms.
+OUTPUTS_DIR = APP_DATA_DIR / "outputs"
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
 logger.info(f"Models directory: {MODELS_DIR}")
