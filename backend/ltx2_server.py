@@ -149,13 +149,19 @@ def _resolve_app_data_dir() -> Path:
 
 APP_DATA_DIR = _resolve_app_data_dir()
 
-# Ensure HuggingFace cache (including hf-xet) uses a writable directory.
-# Inside a Linux AppImage the default ~/.cache/huggingface/xet/ may not be
+# Ensure HuggingFace cache uses a writable directory.
+# Inside a Linux AppImage the default ~/.cache/huggingface/ may not be
 # writable; setting HF_HOME early avoids permission errors during downloads.
 if not os.environ.get("HF_HOME"):
     _hf_home = APP_DATA_DIR / ".hf_cache"
     _hf_home.mkdir(parents=True, exist_ok=True)
     os.environ["HF_HOME"] = str(_hf_home)
+
+# Disable hf-xet (Rust-based download accelerator).  It bypasses the Python
+# http_get path that our tqdm progress hook patches, so downloads show 0%
+# progress in the UI.  Standard HTTP downloads work correctly with progress.
+if not os.environ.get("HF_HUB_ENABLE_HF_TRANSFER"):
+    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
 
 MODELS_DIR = APP_DATA_DIR / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)

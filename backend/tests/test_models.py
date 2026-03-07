@@ -74,7 +74,7 @@ class TestDownloadProgress:
         r = client.get("/api/models/download/progress")
         data = r.json()
         assert data["status"] == "downloading"
-        assert data["currentFile"] == "checkpoint"
+        assert data["currentFile"] == "Main transformer model"
 
 
 class TestModelDownload:
